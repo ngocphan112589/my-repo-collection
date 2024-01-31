@@ -14,20 +14,11 @@ interface Deque<T>{
     T pop();
 
     void push(T data);
+
+    void clear();
 }
 
-interface Iterable<T> {
-    Iterator<T> iterator();
-}
-
-interface Iterator<T> {
-    boolean hasNext();
-    T next();
-    default boolean remove() {
-        throw new RuntimeException("Not Impl default behavior for remove operation");
-    }
-}
-public class CLinkedList<T> implements Deque<T>, Iterable<T> {
+public class CLinkedList<T> implements Deque<T>, CIterable<T> {
     private Node head;
     private Node tail;
     private int size;
@@ -40,7 +31,7 @@ public class CLinkedList<T> implements Deque<T>, Iterable<T> {
         return size;
     }
 
-    private boolean isEmpty(){
+    protected boolean isEmpty(){
         return head == null && tail == null;
     }
     private Node<T> createNewNode(T data){
@@ -180,7 +171,7 @@ public class CLinkedList<T> implements Deque<T>, Iterable<T> {
         Node current = head;
         Node lastMatch = null;
         while (current != null) {
-            if (current.data == data) {
+            if (current.data.equals(data)) {
                 lastMatch = current;
             }
             current = current.next;
@@ -191,7 +182,7 @@ public class CLinkedList<T> implements Deque<T>, Iterable<T> {
         if (head == lastMatch) {
             head = head.next;
         } else {
-            Node previous = head;
+            Node<T> previous = head;
             while (previous.next == lastMatch) {
                 previous.next = lastMatch.next;
             }
@@ -217,8 +208,20 @@ public class CLinkedList<T> implements Deque<T>, Iterable<T> {
     }
 
     @Override
-    public Iterator<T> iterator() {
-        return new LinkedListIterator<>();
+    public void clear() {
+        Node<T> currentNode = head;
+        while (currentNode != null) {
+            Node<T> nextNode = currentNode.getNext();
+            currentNode.setNext(null);
+            currentNode.setData(null);
+            currentNode = nextNode;
+        }
+        head = tail = null;
+    }
+
+    @Override
+    public CIterator<T> iterator() {
+        return new CLinkedListIterator<>();
     }
 
     static class Node<T> {
@@ -229,13 +232,29 @@ public class CLinkedList<T> implements Deque<T>, Iterable<T> {
             this.data = data ;
             this.next = null;
         }
+
+        public void setData(T data) {
+            this.data = data;
+        }
+
+        public void setNext(Node<T> next) {
+            this.next = next;
+        }
+
+        public T getData() {
+            return data;
+        }
+
+        public Node<T> getNext() {
+            return next;
+        }
     }
 
-    class LinkedListIterator<T> implements Iterator<T> {
+    class CLinkedListIterator<T> implements CIterator<T> {
 
         private Node<T> runner;
 
-        public LinkedListIterator() {
+        public CLinkedListIterator() {
             if (isEmpty()) {
                 throw new RuntimeException("Empty Linked List");
             }
@@ -244,20 +263,25 @@ public class CLinkedList<T> implements Deque<T>, Iterable<T> {
 
         @Override
         public boolean hasNext() {
-            return runner.next != null;
+            if (runner != null) {
+                if (runner.next != null) {
+                    return true;
+                } else {
+                    return runner == tail;
+                }
+            }
+            return false;
         }
 
         @Override
         public T next() {
-            if (!hasNext()) {
-                throw new NoSuchElementException();
-            }
+            T value = runner.data;
             runner = runner.next;
-            return runner.data;
+            return value;
         }
 
         @Override
-        public boolean remove() {
+        public void remove() {
             if (isEmpty()){
                 throw new NoSuchElementException();
             }
@@ -271,7 +295,6 @@ public class CLinkedList<T> implements Deque<T>, Iterable<T> {
                 current.next = runner.next;
             }
             size--;
-            return true;
         }
     }
 }
